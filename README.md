@@ -87,5 +87,5 @@ Then open your browser at [http://localhost:8501](http://localhost:8501)
 
 ## 🤝 Contributors
 
-- Built and maintained by **[Your Name / Team]**
+- Built and maintained by **[NICTU]**
 - Inspired by Ollama, Streamlit, SentenceTransformers, Matplotlib, FAISS
