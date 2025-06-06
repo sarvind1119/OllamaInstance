@@ -18,6 +18,28 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import re
 
+from models import load_embed_model, get_ollama_models
+
+st.session_state.embed_model = load_embed_model()
+models = get_ollama_models()
+
+from utils.document_utils import process_document, get_top_k_chunks, sanitize_input
+from utils.vision_utils import call_llama_vision
+from csv_utils import ask_csv_question, run_chart_code
+import streamlit as st
+
+# ... after uploading a CSV file ...
+code = ask_csv_question(df, user_prompt, model)
+if "plt" in code or "plot" in code:
+    try:
+        fig = run_chart_code(code, df)
+        st.pyplot(fig)
+    except Exception as e:
+        st.error(str(e))
+else:
+    st.markdown(code)  # fallback if code is textual
+
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -187,7 +209,16 @@ if csv_mode:
                         response.raise_for_status()
                         result = response.json()["response"]
 
-                        clean_code = re.sub(r"^```(?:python)?|```$", "", result.strip(), flags=re.MULTILINE)
+                        clean_code = result.strip()
+
+                        # Remove code block wrappers if present
+                        if clean_code.startswith("```"):
+                            clean_code = re.sub(r"^```(?:python)?", "", clean_code)
+                            clean_code = re.sub(r"```$", "", clean_code).strip()
+
+                        # Optional: show raw code to help debug
+                        with st.expander("🧾 Show generated code", expanded=False):
+                            st.code(clean_code, language="python")
 
                         if "plot" in clean_code or "plt." in clean_code:
                             st.info("🔄 Executing generated chart...")
@@ -201,6 +232,7 @@ if csv_mode:
                                     st.error(f"❌ Chart execution error: {e}")
                         else:
                             st.markdown(result)
+
                     except Exception as e:
                         logger.error(f"CSV chart error: {e}")
                         st.error("Failed to generate or render chart.")
